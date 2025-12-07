@@ -7,6 +7,8 @@ image-optimizer.exe
 *.mod.sum
 *.test
 *.out
+coverage.out
+coverage.html
 
 # IDE
 .idea/

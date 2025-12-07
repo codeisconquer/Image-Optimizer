@@ -1,4 +1,4 @@
-.PHONY: build build-all clean install deps
+.PHONY: build build-all clean install deps test test-cover test-verbose
 
 # Standard Build für aktuelle Plattform
 build:
@@ -28,4 +28,22 @@ clean:
 # Install lokal
 install: build
 	cp image-optimizer /usr/local/bin/
+
+# Tests ausführen
+test:
+	go test
+
+# Tests mit detaillierter Ausgabe
+test-verbose:
+	go test -v
+
+# Tests mit Coverage
+test-cover:
+	go test -cover
+
+# Coverage-Report generieren
+test-coverage:
+	go test -coverprofile=coverage.out
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage-Report erstellt: coverage.html"
 

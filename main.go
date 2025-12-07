@@ -16,13 +16,14 @@ import (
 const (
 	TypeWeb = "web"
 	TypeApp = "app"
+	TypeBW  = "bw"
 )
 
 func main() {
 	var (
 		inputPath = flag.String("path", "", "Pfad zur Datei oder zum Ordner mit Bildern")
-		imgType   = flag.String("type", "web", "Typ der Optimierung: 'web' oder 'app'")
-		maxSize   = flag.Int("size", 800, "Maximale Höhe/Breite in Pixeln (nicht hochskalieren)")
+		imgType   = flag.String("type", "web", "Typ der Optimierung: 'web', 'app' oder 'bw'")
+		maxSize   = flag.Int("size", 0, "Maximale Höhe/Breite in Pixeln (optional, 0 = keine Größenänderung)")
 	)
 	flag.Parse()
 
@@ -32,13 +33,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *imgType != TypeWeb && *imgType != TypeApp {
-		fmt.Fprintf(os.Stderr, "Fehler: --type muss 'web' oder 'app' sein\n")
+	if *imgType != TypeWeb && *imgType != TypeApp && *imgType != TypeBW {
+		fmt.Fprintf(os.Stderr, "Fehler: --type muss 'web', 'app' oder 'bw' sein\n")
 		os.Exit(1)
 	}
 
-	if *maxSize <= 0 {
-		fmt.Fprintf(os.Stderr, "Fehler: --size muss größer als 0 sein\n")
+	if *maxSize < 0 {
+		fmt.Fprintf(os.Stderr, "Fehler: --size muss größer oder gleich 0 sein\n")
 		os.Exit(1)
 	}
 
@@ -148,16 +149,28 @@ func processImage(inputPath, outputDir string, maxSize int, imgType string) erro
 		return fmt.Errorf("Fehler beim Öffnen: %w", err)
 	}
 
-	// Originalgröße
-	bounds := img.Bounds()
-	width := bounds.Dx()
-	height := bounds.Dy()
+	// Schwarz-Weiß-Konvertierung (wenn gewünscht)
+	if imgType == TypeBW {
+		img = imaging.Grayscale(img)
+	}
 
-	// Nur verkleinern, nicht vergrößern
+	// Größenänderung (wenn gewünscht)
 	var resized image.Image = img
-	if width > maxSize || height > maxSize {
-		// Seitenverhältnis beibehalten
-		resized = imaging.Fit(img, maxSize, maxSize, imaging.Lanczos)
+	if maxSize > 0 {
+		bounds := img.Bounds()
+		width := bounds.Dx()
+		height := bounds.Dy()
+
+		// Nur verkleinern, nicht vergrößern
+		if width > maxSize || height > maxSize {
+			// Seitenverhältnis beibehalten
+			// Für Apps: Höhere Qualität beim Resampling (CatmullRom statt Lanczos)
+			if imgType == TypeApp {
+				resized = imaging.Fit(img, maxSize, maxSize, imaging.CatmullRom)
+			} else {
+				resized = imaging.Fit(img, maxSize, maxSize, imaging.Lanczos)
+			}
+		}
 	}
 
 	// Ausgabedatei erstellen
@@ -170,27 +183,43 @@ func processImage(inputPath, outputDir string, maxSize int, imgType string) erro
 	}
 	defer outFile.Close()
 
-	// Format basierend auf Dateiendung
+	// Format basierend auf Dateiendung und Typ
 	ext := strings.ToLower(filepath.Ext(inputPath))
-	switch ext {
-	case ".jpg", ".jpeg":
-		// JPEG mit hoher Qualität für Web/App
-		quality := 85
-		if imgType == TypeApp {
-			quality = 90 // Höhere Qualität für Apps
+	
+	// Für Apps: PNG bevorzugen (iOS/Android nutzen oft PNG)
+	if imgType == TypeApp {
+		// Konvertiere alle Formate zu PNG für Apps (bessere Qualität, Transparenz)
+		outputPath = strings.TrimSuffix(outputPath, ext) + ".png"
+		// Datei neu erstellen mit PNG-Endung
+		outFile.Close()
+		outFile, err = os.Create(outputPath)
+		if err != nil {
+			return fmt.Errorf("Fehler beim Erstellen der Ausgabedatei: %w", err)
 		}
-		err = jpeg.Encode(outFile, resized, &jpeg.Options{Quality: quality})
-	case ".png":
-		// PNG ohne Kompression (kann später optimiert werden)
+		defer outFile.Close()
 		err = png.Encode(outFile, resized)
-	default:
-		// Für andere Formate als PNG speichern
-		err = png.Encode(outFile, resized)
-		if err == nil {
-			// Dateiname anpassen
-			newPath := strings.TrimSuffix(outputPath, ext) + ".png"
-			os.Rename(outputPath, newPath)
-			outputPath = newPath
+	} else {
+		// Für Web/BW: Originalformat beibehalten
+		switch ext {
+		case ".jpg", ".jpeg":
+			// JPEG mit Qualität basierend auf Typ
+			quality := 85
+			if imgType == TypeWeb {
+				quality = 85 // Web-Optimierung
+			}
+			err = jpeg.Encode(outFile, resized, &jpeg.Options{Quality: quality})
+		case ".png":
+			// PNG ohne Kompression
+			err = png.Encode(outFile, resized)
+		default:
+			// Für andere Formate als PNG speichern
+			err = png.Encode(outFile, resized)
+			if err == nil {
+				// Dateiname anpassen
+				newPath := strings.TrimSuffix(outputPath, ext) + ".png"
+				os.Rename(outputPath, newPath)
+				outputPath = newPath
+			}
 		}
 	}
 

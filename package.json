@@ -1,0 +1,33 @@
+{
+  "name": "image-optimizer",
+  "version": "1.0.0",
+  "description": "Ein Kommandozeilen-Tool zur Optimierung von Bildern für Web- und App-Nutzung",
+  "scripts": {
+    "test": "go test",
+    "test:verbose": "go test -v",
+    "test:cover": "go test -cover",
+    "test:coverage": "go test -coverprofile=coverage.out && go tool cover -html=coverage.out -o coverage.html",
+    "build": "go build -o image-optimizer main.go",
+    "build:all": "make build-all",
+    "install:go": "go mod download && go mod tidy",
+    "install:bin": "./install.sh",
+    "clean": "rm -f image-optimizer image-optimizer.exe coverage.out coverage.html && rm -rf dist/",
+    "lint": "go vet ./...",
+    "fmt": "go fmt ./...",
+    "help": "./image-optimizer --help"
+  },
+  "keywords": [
+    "image",
+    "optimizer",
+    "cli",
+    "go",
+    "web",
+    "app"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
+
