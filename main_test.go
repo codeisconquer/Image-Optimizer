@@ -164,30 +164,51 @@ func TestProcessImage(t *testing.T) {
 
 	// Test processImage mit verschiedenen Parametern
 	tests := []struct {
-		name    string
-		maxSize int
-		imgType string
+		name      string
+		maxSize   int
+		imgType   string
+		overwrite bool
 	}{
-		{"Web type, size 800", 800, TypeWeb},
-		{"App type, size 800", 800, TypeApp},
-		{"BW type, size 800", 800, TypeBW},
-		{"Web type, size 100", 100, TypeWeb},
-		{"App type, size 100", 100, TypeApp},
-		{"BW type, size 100", 100, TypeBW},
-		{"BW type, no resize", 0, TypeBW},
-		{"Web type, no resize", 0, TypeWeb},
-		{"App type, no resize", 0, TypeApp},
+		{"Web type, size 800", 800, TypeWeb, false},
+		{"App type, size 800", 800, TypeApp, false},
+		{"BW type, size 800", 800, TypeBW, false},
+		{"Web type, size 100", 100, TypeWeb, false},
+		{"App type, size 100", 100, TypeApp, false},
+		{"BW type, size 100", 100, TypeBW, false},
+		{"BW type, no resize", 0, TypeBW, false},
+		{"Web type, no resize", 0, TypeWeb, false},
+		{"App type, no resize", 0, TypeApp, false},
+		{"App type, overwrite", 800, TypeApp, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := processImage(testImagePath, outputDir, tt.maxSize, tt.imgType)
+			// Für Overwrite-Test: Erstelle neue Testdatei
+			testPath := testImagePath
+			if tt.overwrite {
+				testPath = filepath.Join(tmpDir, "test_overwrite.png")
+				err = createTestImage(testPath)
+				if err != nil {
+					t.Fatalf("Fehler beim Erstellen des Testbildes: %v", err)
+				}
+			}
+
+			err := processImage(testPath, outputDir, tt.maxSize, tt.imgType, tt.overwrite)
 			if err != nil {
 				t.Errorf("processImage() returned error: %v", err)
 			}
 
 			// Prüfe ob Ausgabedatei erstellt wurde
-			outputPath := filepath.Join(outputDir, "test.png")
+			var outputPath string
+			if tt.overwrite {
+				outputPath = testPath
+			} else {
+				outputPath = filepath.Join(outputDir, "test.png")
+				if tt.name == "App type, overwrite" {
+					outputPath = filepath.Join(outputDir, "test_overwrite.png")
+				}
+			}
+
 			if _, err := os.Stat(outputPath); os.IsNotExist(err) {
 				t.Errorf("processImage() did not create output file: %s", outputPath)
 			}
@@ -209,7 +230,7 @@ func TestProcessImageNonExistentFile(t *testing.T) {
 	}
 
 	nonExistentFile := filepath.Join(tmpDir, "nonexistent.jpg")
-	err = processImage(nonExistentFile, outputDir, 800, TypeWeb)
+	err = processImage(nonExistentFile, outputDir, 800, TypeWeb, false)
 	if err == nil {
 		t.Error("processImage() should return error for non-existent file")
 	}
@@ -227,4 +248,3 @@ func createTestImage(path string) error {
 	}
 	return imaging.Save(img, path)
 }
-

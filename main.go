@@ -24,6 +24,8 @@ func main() {
 		inputPath = flag.String("path", "", "Pfad zur Datei oder zum Ordner mit Bildern")
 		imgType   = flag.String("type", "web", "Typ der Optimierung: 'web', 'app' oder 'bw'")
 		maxSize   = flag.Int("size", 0, "Maximale Höhe/Breite in Pixeln (optional, 0 = keine Größenänderung)")
+		outputDir = flag.String("output", "", "Ausgabeverzeichnis (optional, Standard: optimized/ im Quellverzeichnis)")
+		overwrite = flag.Bool("overwrite", false, "Originaldateien überschreiben (Standard: false)")
 	)
 	flag.Parse()
 
@@ -71,32 +73,50 @@ func main() {
 		files = []string{*inputPath}
 	}
 
-	// Optimiertes Verzeichnis erstellen
-	var outputDir string
-	if info.IsDir() {
-		// Bei Ordnern: optimized/ im angegebenen Ordner
-		outputDir = filepath.Join(*inputPath, "optimized")
+	// Ausgabeverzeichnis bestimmen
+	var finalOutputDir string
+	if *overwrite {
+		// Bei Überschreiben: Ausgabe in dasselbe Verzeichnis wie Quelle
+		if info.IsDir() {
+			finalOutputDir = *inputPath
+		} else {
+			finalOutputDir = filepath.Dir(*inputPath)
+		}
+	} else if *outputDir != "" {
+		// Benutzerdefiniertes Ausgabeverzeichnis
+		finalOutputDir = *outputDir
 	} else {
-		// Bei Einzeldateien: optimized/ im selben Ordner wie die Datei
-		outputDir = filepath.Join(filepath.Dir(*inputPath), "optimized")
+		// Standard: optimized/ im Quellverzeichnis
+		if info.IsDir() {
+			finalOutputDir = filepath.Join(*inputPath, "optimized")
+		} else {
+			finalOutputDir = filepath.Join(filepath.Dir(*inputPath), "optimized")
+		}
 	}
 
-	err = os.MkdirAll(outputDir, 0755)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fehler beim Erstellen des Ausgabeordners: %v\n", err)
-		os.Exit(1)
+	// Ausgabeverzeichnis erstellen (nur wenn nicht überschreiben)
+	if !*overwrite {
+		err = os.MkdirAll(finalOutputDir, 0755)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Fehler beim Erstellen des Ausgabeordners: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// Bilder verarbeiten
 	successCount := 0
 	for _, file := range files {
-		err := processImage(file, outputDir, *maxSize, *imgType)
+		err := processImage(file, finalOutputDir, *maxSize, *imgType, *overwrite)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Fehler beim Verarbeiten von %s: %v\n", file, err)
 			continue
 		}
 		successCount++
-		fmt.Printf("✓ Optimiert: %s\n", filepath.Base(file))
+		if *overwrite {
+			fmt.Printf("✓ Überschrieben: %s\n", file)
+		} else {
+			fmt.Printf("✓ Optimiert: %s\n", filepath.Base(file))
+		}
 	}
 
 	fmt.Printf("\nFertig! %d von %d Bildern erfolgreich optimiert.\n", successCount, len(files))
@@ -142,7 +162,7 @@ func isImageFile(path string) bool {
 	return extensions[ext]
 }
 
-func processImage(inputPath, outputDir string, maxSize int, imgType string) error {
+func processImage(inputPath, outputDir string, maxSize int, imgType string, overwrite bool) error {
 	// Bild öffnen
 	img, err := imaging.Open(inputPath)
 	if err != nil {
@@ -173,8 +193,15 @@ func processImage(inputPath, outputDir string, maxSize int, imgType string) erro
 		}
 	}
 
-	// Ausgabedatei erstellen
-	outputPath := filepath.Join(outputDir, filepath.Base(inputPath))
+	// Ausgabepfad bestimmen
+	var outputPath string
+	if overwrite {
+		// Originaldatei überschreiben
+		outputPath = inputPath
+	} else {
+		// Neue Datei im Ausgabeverzeichnis
+		outputPath = filepath.Join(outputDir, filepath.Base(inputPath))
+	}
 	
 	// Datei erstellen
 	outFile, err := os.Create(outputPath)

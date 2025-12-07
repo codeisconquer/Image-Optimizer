@@ -195,6 +195,18 @@ Das Tool durchsucht rekursiv alle Unterordner nach Bildern.
 - `--size`: Maximale Höhe/Breite in Pixeln (optional, Standard: 0 = keine Größenänderung)
   - Wenn 0 oder nicht angegeben: Keine Größenänderung
   - Wenn > 0: Bilder werden auf max. Größe verkleinert (ohne Hochskalierung)
+- `--output`: Ausgabeverzeichnis (optional, Standard: `optimized/` im Quellverzeichnis)
+  - Wenn nicht angegeben: Bilder werden in `optimized/` gespeichert
+  - Wenn angegeben: Bilder werden im angegebenen Verzeichnis gespeichert
+- `--overwrite`: Originaldateien überschreiben (Standard: `false`)
+  - Wenn `true`: Originaldateien werden direkt überschrieben
+  - Wenn `false`: Neue Dateien werden erstellt (Standard)
+- `--output`: Ausgabeverzeichnis (optional, Standard: `optimized/` im Quellverzeichnis)
+  - Wenn nicht angegeben: Bilder werden in `optimized/` gespeichert
+  - Wenn angegeben: Bilder werden im angegebenen Verzeichnis gespeichert
+- `--overwrite`: Originaldateien überschreiben (Standard: `false`)
+  - Wenn `true`: Originaldateien werden direkt überschrieben
+  - Wenn `false`: Neue Dateien werden erstellt (Standard)
 
 ### Beispiele
 
@@ -219,13 +231,32 @@ Das Tool durchsucht rekursiv alle Unterordner nach Bildern.
 
 # Nur Metadaten entfernen, keine Größenänderung
 ./image-optimizer --path ./photos --type web
+
+# Mit benutzerdefiniertem Ausgabeverzeichnis
+./image-optimizer --path ./images --type web --size 800 --output ./processed
+
+# Originaldateien überschreiben
+./image-optimizer --path ./images --type web --size 800 --overwrite
+
+# Kombination: App-Optimierung mit benutzerdefiniertem Ausgabeverzeichnis
+./image-optimizer --path ./photos --type app --size 1600 --output ./app-assets
 ```
 
 ## Ausgabe
 
+**Standard-Verhalten:**
 Die optimierten Bilder werden im Verzeichnis `optimized/` gespeichert:
 - Bei Einzeldateien: Im selben Verzeichnis wie die Quelldatei
 - Bei Ordnern: Im angegebenen Ordner als Unterordner `optimized/`
+
+**Mit `--output`:**
+- Bilder werden im angegebenen Verzeichnis gespeichert
+- Das Verzeichnis wird automatisch erstellt, falls es nicht existiert
+
+**Mit `--overwrite`:**
+- Originaldateien werden direkt überschrieben
+- Kein neues Verzeichnis wird erstellt
+- **Vorsicht:** Die Originaldateien gehen verloren!
 
 ## Unterstützte Formate
 
