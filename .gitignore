@@ -1,0 +1,25 @@
+# Binaries
+image-optimizer
+image-optimizer.exe
+*.exe
+
+# Go
+*.mod.sum
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test images
+optimized/
+test-images/
+
