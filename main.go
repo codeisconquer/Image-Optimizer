@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"image"
+	"image/color"
 	"image/jpeg"
 	"image/png"
 	"os"
@@ -14,16 +15,18 @@ import (
 )
 
 const (
-	TypeWeb      = "web"
-	TypeApp      = "app"
-	TypeBW       = "bw"
+	TypeWeb       = "web"
+	TypeApp       = "app"
+	TypeBW        = "bw"
 	TypeThumbnail = "thumbnail"
+	TypeSepia     = "sepia"
+	TypeInvert    = "invert"
 )
 
 func main() {
 	var (
 		inputPath = flag.String("path", "", "Pfad zur Datei oder zum Ordner mit Bildern")
-		imgType   = flag.String("type", "web", "Typ der Optimierung: 'web', 'app', 'bw' oder 'thumbnail'")
+		imgType   = flag.String("type", "web", "Typ der Optimierung: 'web', 'app', 'bw', 'thumbnail', 'sepia' oder 'invert'")
 		maxSize   = flag.Int("size", 0, "Maximale Höhe/Breite in Pixeln (optional, 0 = keine Größenänderung)")
 		outputDir = flag.String("output", "", "Ausgabeverzeichnis (optional, Standard: optimized/ im Quellverzeichnis)")
 		overwrite = flag.Bool("overwrite", false, "Originaldateien überschreiben (Standard: false)")
@@ -36,8 +39,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *imgType != TypeWeb && *imgType != TypeApp && *imgType != TypeBW && *imgType != TypeThumbnail {
-		fmt.Fprintf(os.Stderr, "Fehler: --type muss 'web', 'app', 'bw' oder 'thumbnail' sein\n")
+	validTypes := map[string]bool{
+		TypeWeb: true, TypeApp: true, TypeBW: true,
+		TypeThumbnail: true, TypeSepia: true, TypeInvert: true,
+	}
+	if !validTypes[*imgType] {
+		fmt.Fprintf(os.Stderr, "Fehler: --type muss 'web', 'app', 'bw', 'thumbnail', 'sepia' oder 'invert' sein\n")
 		os.Exit(1)
 	}
 
@@ -170,9 +177,14 @@ func processImage(inputPath, outputDir string, maxSize int, imgType string, over
 		return fmt.Errorf("Fehler beim Öffnen: %w", err)
 	}
 
-	// Schwarz-Weiß-Konvertierung (wenn gewünscht)
-	if imgType == TypeBW {
+	// Farbkonvertierungen (wenn gewünscht)
+	switch imgType {
+	case TypeBW:
 		img = imaging.Grayscale(img)
+	case TypeSepia:
+		img = applySepia(img)
+	case TypeInvert:
+		img = applyInvert(img)
 	}
 
 	// Größenänderung (wenn gewünscht)
@@ -265,5 +277,65 @@ func processImage(inputPath, outputDir string, maxSize int, imgType string, over
 	}
 
 	return nil
+}
+
+// applySepia wendet einen Sepia-Filter auf das Bild an
+func applySepia(img image.Image) image.Image {
+	bounds := img.Bounds()
+	sepia := image.NewRGBA(bounds)
+	
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, b, a := img.At(x, y).RGBA()
+			// Konvertiere von 16-bit zu 8-bit
+			r8 := uint8(r >> 8)
+			g8 := uint8(g >> 8)
+			b8 := uint8(b >> 8)
+			
+			// Sepia-Formel
+			tr := float64(r8)*0.393 + float64(g8)*0.769 + float64(b8)*0.189
+			tg := float64(r8)*0.349 + float64(g8)*0.686 + float64(b8)*0.168
+			tb := float64(r8)*0.272 + float64(g8)*0.534 + float64(b8)*0.131
+			
+			// Begrenze auf 255
+			if tr > 255 {
+				tr = 255
+			}
+			if tg > 255 {
+				tg = 255
+			}
+			if tb > 255 {
+				tb = 255
+			}
+			
+			sepia.Set(x, y, color.RGBA{
+				R: uint8(tr),
+				G: uint8(tg),
+				B: uint8(tb),
+				A: uint8(a >> 8),
+			})
+		}
+	}
+	return sepia
+}
+
+// applyInvert invertiert die Farben des Bildes
+func applyInvert(img image.Image) image.Image {
+	bounds := img.Bounds()
+	inverted := image.NewRGBA(bounds)
+	
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, b, a := img.At(x, y).RGBA()
+			// Konvertiere von 16-bit zu 8-bit und invertiere
+			inverted.Set(x, y, color.RGBA{
+				R: 255 - uint8(r>>8),
+				G: 255 - uint8(g>>8),
+				B: 255 - uint8(b>>8),
+				A: uint8(a >> 8),
+			})
+		}
+	}
+	return inverted
 }
 

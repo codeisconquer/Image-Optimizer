@@ -7,7 +7,7 @@ Ein Kommandozeilen-Tool zur Optimierung von Bildern für Web- und App-Nutzung.
 - ✅ Verkleinert Bilder auf maximale Höhe/Breite (ohne Hochskalierung, optional)
 - ✅ App-Optimierung: Konvertiert alle Bilder zu PNG (bessere Qualität, Transparenz)
 - ✅ Thumbnail-Erstellung: Vorschaubilder mit optimierter Größe und Qualität
-- ✅ Konvertiert Bilder zu Schwarz-Weiß (optional)
+- ✅ Farbkonvertierungen: Schwarz-Weiß, Sepia (Vintage), Invert (Negativ)
 - ✅ Entfernt alle Metadaten (EXIF, Geo-Daten, Kamera-Informationen, etc.)
 - ✅ Unterstützt einzelne Dateien oder ganze Ordner
 - ✅ Speichert optimierte Bilder im `optimized/` Verzeichnis
@@ -189,11 +189,13 @@ Das Tool durchsucht rekursiv alle Unterordner nach Bildern.
 ### Parameter
 
 - `--path`: Pfad zur Datei oder zum Ordner (erforderlich)
-- `--type`: Typ der Optimierung (`web`, `app`, `bw` oder `thumbnail`, Standard: `web`)
+- `--type`: Typ der Optimierung (`web`, `app`, `bw`, `thumbnail`, `sepia` oder `invert`, Standard: `web`)
   - `web`: JPEG-Qualität 85%, behält Originalformat bei
   - `app`: Konvertiert alle Bilder zu PNG (bessere Qualität, Transparenz), höhere Resampling-Qualität
   - `bw`: Konvertiert Bilder zu Schwarz-Weiß
   - `thumbnail`: Vorschaubilder, Standardgröße 300px (wenn `--size` nicht angegeben), JPEG-Qualität 75%
+  - `sepia`: Wendet einen Sepia-Filter an (Vintage-Look)
+  - `invert`: Invertiert die Farben des Bildes (Negativ-Effekt)
 - `--size`: Maximale Höhe/Breite in Pixeln (optional, Standard: 0 = keine Größenänderung)
   - Wenn 0 oder nicht angegeben: Keine Größenänderung
   - Wenn > 0: Bilder werden auf max. Größe verkleinert (ohne Hochskalierung)
@@ -233,6 +235,18 @@ Das Tool durchsucht rekursiv alle Unterordner nach Bildern.
 
 # Thumbnails mit benutzerdefinierter Größe
 ./image-optimizer --path ./images --type thumbnail --size 200
+
+# Sepia-Filter anwenden (Vintage-Look)
+./image-optimizer --path ./images --type sepia
+
+# Sepia mit Größenänderung
+./image-optimizer --path ./images --type sepia --size 1200
+
+# Farben invertieren (Negativ-Effekt)
+./image-optimizer --path ./images --type invert
+
+# Invert mit Größenänderung
+./image-optimizer --path ./images --type invert --size 800
 
 # Nur Größe ändern (Web-Optimierung, 800px)
 ./image-optimizer --path ./photos --type web --size 800

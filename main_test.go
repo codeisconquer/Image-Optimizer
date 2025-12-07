@@ -180,6 +180,10 @@ func TestProcessImage(t *testing.T) {
 		{"App type, no resize", 0, TypeApp, false},
 		{"Thumbnail type, default size", 0, TypeThumbnail, false},
 		{"Thumbnail type, custom size", 200, TypeThumbnail, false},
+		{"Sepia type, size 800", 800, TypeSepia, false},
+		{"Sepia type, no resize", 0, TypeSepia, false},
+		{"Invert type, size 800", 800, TypeInvert, false},
+		{"Invert type, no resize", 0, TypeInvert, false},
 		{"App type, overwrite", 800, TypeApp, true},
 	}
 
