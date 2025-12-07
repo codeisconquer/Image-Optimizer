@@ -6,6 +6,7 @@ Ein Kommandozeilen-Tool zur Optimierung von Bildern für Web- und App-Nutzung.
 
 - ✅ Verkleinert Bilder auf maximale Höhe/Breite (ohne Hochskalierung, optional)
 - ✅ App-Optimierung: Konvertiert alle Bilder zu PNG (bessere Qualität, Transparenz)
+- ✅ Thumbnail-Erstellung: Vorschaubilder mit optimierter Größe und Qualität
 - ✅ Konvertiert Bilder zu Schwarz-Weiß (optional)
 - ✅ Entfernt alle Metadaten (EXIF, Geo-Daten, Kamera-Informationen, etc.)
 - ✅ Unterstützt einzelne Dateien oder ganze Ordner
@@ -188,10 +189,11 @@ Das Tool durchsucht rekursiv alle Unterordner nach Bildern.
 ### Parameter
 
 - `--path`: Pfad zur Datei oder zum Ordner (erforderlich)
-- `--type`: Typ der Optimierung (`web`, `app` oder `bw`, Standard: `web`)
+- `--type`: Typ der Optimierung (`web`, `app`, `bw` oder `thumbnail`, Standard: `web`)
   - `web`: JPEG-Qualität 85%, behält Originalformat bei
   - `app`: Konvertiert alle Bilder zu PNG (bessere Qualität, Transparenz), höhere Resampling-Qualität
   - `bw`: Konvertiert Bilder zu Schwarz-Weiß
+  - `thumbnail`: Vorschaubilder, Standardgröße 300px (wenn `--size` nicht angegeben), JPEG-Qualität 75%
 - `--size`: Maximale Höhe/Breite in Pixeln (optional, Standard: 0 = keine Größenänderung)
   - Wenn 0 oder nicht angegeben: Keine Größenänderung
   - Wenn > 0: Bilder werden auf max. Größe verkleinert (ohne Hochskalierung)
@@ -225,6 +227,12 @@ Das Tool durchsucht rekursiv alle Unterordner nach Bildern.
 
 # Bilder zu Schwarz-Weiß konvertieren und auf 800px verkleinern
 ./image-optimizer --path ./images --type bw --size 800
+
+# Thumbnails erstellen (Standard: 300px)
+./image-optimizer --path ./images --type thumbnail
+
+# Thumbnails mit benutzerdefinierter Größe
+./image-optimizer --path ./images --type thumbnail --size 200
 
 # Nur Größe ändern (Web-Optimierung, 800px)
 ./image-optimizer --path ./photos --type web --size 800

@@ -14,15 +14,16 @@ import (
 )
 
 const (
-	TypeWeb = "web"
-	TypeApp = "app"
-	TypeBW  = "bw"
+	TypeWeb      = "web"
+	TypeApp      = "app"
+	TypeBW       = "bw"
+	TypeThumbnail = "thumbnail"
 )
 
 func main() {
 	var (
 		inputPath = flag.String("path", "", "Pfad zur Datei oder zum Ordner mit Bildern")
-		imgType   = flag.String("type", "web", "Typ der Optimierung: 'web', 'app' oder 'bw'")
+		imgType   = flag.String("type", "web", "Typ der Optimierung: 'web', 'app', 'bw' oder 'thumbnail'")
 		maxSize   = flag.Int("size", 0, "Maximale Höhe/Breite in Pixeln (optional, 0 = keine Größenänderung)")
 		outputDir = flag.String("output", "", "Ausgabeverzeichnis (optional, Standard: optimized/ im Quellverzeichnis)")
 		overwrite = flag.Bool("overwrite", false, "Originaldateien überschreiben (Standard: false)")
@@ -35,8 +36,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *imgType != TypeWeb && *imgType != TypeApp && *imgType != TypeBW {
-		fmt.Fprintf(os.Stderr, "Fehler: --type muss 'web', 'app' oder 'bw' sein\n")
+	if *imgType != TypeWeb && *imgType != TypeApp && *imgType != TypeBW && *imgType != TypeThumbnail {
+		fmt.Fprintf(os.Stderr, "Fehler: --type muss 'web', 'app', 'bw' oder 'thumbnail' sein\n")
 		os.Exit(1)
 	}
 
@@ -176,19 +177,26 @@ func processImage(inputPath, outputDir string, maxSize int, imgType string, over
 
 	// Größenänderung (wenn gewünscht)
 	var resized image.Image = img
-	if maxSize > 0 {
+	finalMaxSize := maxSize
+	
+	// Für Thumbnails: Standardgröße 300px wenn nicht angegeben
+	if imgType == TypeThumbnail && maxSize == 0 {
+		finalMaxSize = 300
+	}
+	
+	if finalMaxSize > 0 {
 		bounds := img.Bounds()
 		width := bounds.Dx()
 		height := bounds.Dy()
 
 		// Nur verkleinern, nicht vergrößern
-		if width > maxSize || height > maxSize {
+		if width > finalMaxSize || height > finalMaxSize {
 			// Seitenverhältnis beibehalten
 			// Für Apps: Höhere Qualität beim Resampling (CatmullRom statt Lanczos)
 			if imgType == TypeApp {
-				resized = imaging.Fit(img, maxSize, maxSize, imaging.CatmullRom)
+				resized = imaging.Fit(img, finalMaxSize, finalMaxSize, imaging.CatmullRom)
 			} else {
-				resized = imaging.Fit(img, maxSize, maxSize, imaging.Lanczos)
+				resized = imaging.Fit(img, finalMaxSize, finalMaxSize, imaging.Lanczos)
 			}
 		}
 	}
@@ -226,13 +234,15 @@ func processImage(inputPath, outputDir string, maxSize int, imgType string, over
 		defer outFile.Close()
 		err = png.Encode(outFile, resized)
 	} else {
-		// Für Web/BW: Originalformat beibehalten
+		// Für Web/BW/Thumbnail: Originalformat beibehalten
 		switch ext {
 		case ".jpg", ".jpeg":
 			// JPEG mit Qualität basierend auf Typ
 			quality := 85
 			if imgType == TypeWeb {
 				quality = 85 // Web-Optimierung
+			} else if imgType == TypeThumbnail {
+				quality = 75 // Niedrigere Qualität für Thumbnails (kleinere Dateigröße)
 			}
 			err = jpeg.Encode(outFile, resized, &jpeg.Options{Quality: quality})
 		case ".png":

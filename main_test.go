@@ -178,6 +178,8 @@ func TestProcessImage(t *testing.T) {
 		{"BW type, no resize", 0, TypeBW, false},
 		{"Web type, no resize", 0, TypeWeb, false},
 		{"App type, no resize", 0, TypeApp, false},
+		{"Thumbnail type, default size", 0, TypeThumbnail, false},
+		{"Thumbnail type, custom size", 200, TypeThumbnail, false},
 		{"App type, overwrite", 800, TypeApp, true},
 	}
 
